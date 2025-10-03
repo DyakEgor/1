@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Планировщик недели</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #6b8cbc;
+            --background-color: #f5f7fa;
+            --text-color: #333;
+            --border-color: #ddd;
+            --success-color: #4caf50;
+            --warning-color: #ff9800;
+            --danger-color: #f44336;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--background-color);
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 15px;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .week-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .week-navigation button {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .week-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .day {
+            background-color: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .day.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .day-name {
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .day-date {
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+
+        .schedule-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
+        }
+
+        .time-slots {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .time-slot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .time-slot:last-child {
+            border-bottom: none;
+        }
+
+        .time-info {
+            flex: 1;
+        }
+
+        .time {
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .event {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .alarm-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--warning-color);
+            margin-right: 10px;
+        }
+
+        .alarm-set .alarm-indicator {
+            background-color: var(--success-color);
+        }
+
+        .add-event-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1rem;
+            margin-top: 15px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+        }
+
+        .checkbox-group input {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .save-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .cancel-btn {
+            background-color: #f0f0f0;
+            color: var(--text-color);
+        }
+
+        .delete-btn {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .notification-permission {
+            background-color: var(--warning-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .notification-permission button {
+            background-color: white;
+            color: var(--warning-color);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .install-prompt {
+            background-color: var(--success-color);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .install-prompt button {
+            background-color: white;
+            color: var(--success-color);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 600px) {
+            .week-days {
+                grid-template-columns: repeat(7, 1fr);
+                font-size: 0.8rem;
+            }
+            
+            .day-name {
+                font-size: 0.8rem;
+            }
+            
+            .day-date {
+                font-size: 0.7rem;
+            }
+            
+            .time-slot {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .time-info {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Планировщик недели</h1>
+        <div class="week-navigation">
+            <button id="prev-week">← Пред. неделя</button>
+            <span id="current-week">Неделя 1, 2023</span>
+            <button id="next-week">След. неделя →</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="notification-permission" class="notification-permission" style="display: none;">
+            Для получения уведомлений разрешите отправку уведомлений
+            <button id="enable-notifications">Разрешить</button>
+        </div>
+
+        <div id="install-prompt" class="install-prompt" style="display: none;">
+            Установите приложение для быстрого доступа
+            <button id="install-app">Установить</button>
+        </div>
+
+        <div class="week-days" id="week-days">
+            <!-- Days will be populated by JavaScript -->
+        </div>
+
+        <div class="schedule-container">
+            <h2 id="selected-day">Понедельник, 1 января</h2>
+            <div class="time-slots" id="time-slots">
+                <!-- Time slots will be populated by JavaScript -->
+            </div>
+            <button class="add-event-btn" id="add-event">Добавить событие</button>
+        </div>
+    </div>
+
+    <!-- Modal for adding/editing events -->
+    <div class="modal" id="event-modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Добавить событие</h2>
+            <form id="event-form">
+                <div class="form-group">
+                    <label for="event-title">Название события</label>
+                    <input type="text" id="event-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="event-date">Дата</label>
+                    <input type="date" id="event-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="event-time">Время</label>
+                    <input type="time" id="event-time" required>
+                </div>
+                <div class="form-group">
+                    <label for="event-description">Описание (необязательно)</label>
+                    <textarea id="event-description"></textarea>
+                </div>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="event-alarm">
+                    <label for="event-alarm">Установить будильник</label>
+                </div>
+                <div class="form-group" id="alarm-time-group" style="display: none;">
+                    <label for="alarm-time">За сколько минут напомнить</label>
+                    <select id="alarm-time">
+                        <option value="5">5 минут</option>
+                        <option value="10">10 минут</option>
+                        <option value="15">15 минут</option>
+                        <option value="30">30 минут</option>
+                        <option value="60">1 час</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="cancel-btn" id="cancel-event">Отмена</button>
+                    <button type="submit" class="save-btn">Сохранить</button>
+                    <button type="button" class="delete-btn" id="delete-event" style="display: none;">Удалить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Основные переменные
+        let currentWeek = 0; // 0 - текущая неделя
+        let selectedDate = new Date();
+        let events = JSON.parse(localStorage.getItem('weeklyScheduleEvents')) || {};
+        let editingEventId = null;
+        let deferredPrompt;
+
+        // Инициализация приложения
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            checkNotificationPermission();
+            setupServiceWorker();
+        });
+
+        // Инициализация приложения
+        function initializeApp() {
+            renderWeekDays();
+            renderTimeSlots();
+            setupEventListeners();
+        }
+
+        // Настройка обработчиков событий
+        function setupEventListeners() {
+            document.getElementById('prev-week').addEventListener('click', goToPrevWeek);
+            document.getElementById('next-week').addEventListener('click', goToNextWeek);
+            document.getElementById('add-event').addEventListener('click', openAddEventModal);
+            document.getElementById('cancel-event').addEventListener('click', closeEventModal);
+            document.getElementById('delete-event').addEventListener('click', deleteEvent);
+            document.getElementById('event-form').addEventListener('submit', saveEvent);
+            document.getElementById('event-alarm').addEventListener('change', toggleAlarmTime);
+            document.getElementById('enable-notifications').addEventListener('click', requestNotificationPermission);
+            document.getElementById('install-app').addEventListener('click', installApp);
+            
+            // Обработчик для установки приложения
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                document.getElementById('install-prompt').style.display = 'block';
+            });
+        }
+
+        // Отображение дней недели
+        function renderWeekDays() {
+            const weekDaysContainer = document.getElementById('week-days');
+            weekDaysContainer.innerHTML = '';
+            
+            const weekStart = getWeekStartDate();
+            const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+            
+            for (let i = 0; i < 7; i++) {
+                const dayDate = new Date(weekStart);
+                dayDate.setDate(weekStart.getDate() + i);
+                
+                const dayElement = document.createElement('div');
+                dayElement.className = 'day';
+                if (isSameDay(dayDate, selectedDate)) {
+                    dayElement.classList.add('active');
+                }
+                
+                dayElement.innerHTML = `
+                    <div class="day-name">${daysOfWeek[i]}</div>
+                    <div class="day-date">${formatDate(dayDate, 'short')}</div>
+                `;
+                
+                dayElement.addEventListener('click', () => selectDay(dayDate));
+                weekDaysContainer.appendChild(dayElement);
+            }
+            
+            // Обновление заголовка текущей недели
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            document.getElementById('current-week').textContent = 
+                `Неделя ${getWeekNumber(weekStart)}, ${weekStart.getFullYear()}`;
+        }
+
+        // Отображение временных слотов для выбранного дня
+        function renderTimeSlots() {
+            const timeSlotsContainer = document.getElementById('time-slots');
+            timeSlotsContainer.innerHTML = '';
+            
+            // Обновление заголовка выбранного дня
+            document.getElementById('selected-day').textContent = formatDate(selectedDate, 'long');
+            
+            // Получение событий для выбранного дня
+            const dateKey = formatDate(selectedDate, 'key');
+            const dayEvents = events[dateKey] || [];
+            
+            // Сортировка событий по времени
+            dayEvents.sort((a, b) => {
+                const timeA = a.time.split(':').map(Number);
+                const timeB = b.time.split(':').map(Number);
+                return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
+            });
+            
+            if (dayEvents.length === 0) {
+                timeSlotsContainer.innerHTML = '<p style="text-align: center; padding: 20px;">Событий на этот день нет</p>';
+                return;
+            }
+            
+            dayEvents.forEach(event => {
+                const timeSlot = document.createElement('div');
+                timeSlot.className = 'time-slot';
+                if (event.alarm) {
+                    timeSlot.classList.add('alarm-set');
+                }
+                
+                timeSlot.innerHTML = `
+                    <div class="time-info">
+                        <div class="time">${event.time}</div>
+                        <div class="event">${event.title}</div>
+                    </div>
+                    ${event.alarm ? '<div class="alarm-indicator"></div>' : ''}
+                `;
+                
+                timeSlot.addEventListener('click', () => editEvent(event.id));
+                timeSlotsContainer.appendChild(timeSlot);
+            });
+        }
+
+        // Получение даты начала недели
+        function getWeekStartDate() {
+            const date = new Date();
+            date.setDate(date.getDate() + currentWeek * 7);
+            const day = date.getDay();
+            const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+            return new Date(date.setDate(diff));
+        }
+
+        // Переход к предыдущей неделе
+        function goToPrevWeek() {
+            currentWeek--;
+            renderWeekDays();
+            // Сброс выбранного дня на первый день недели
+            selectedDate = getWeekStartDate();
+            renderTimeSlots();
+        }
+
+        // Переход к следующей неделе
+        function goToNextWeek() {
+            currentWeek++;
+            renderWeekDays();
+            // Сброс выбранного дня на первый день недели
+            selectedDate = getWeekStartDate();
+            renderTimeSlots();
+        }
+
+        // Выбор дня
+        function selectDay(date) {
+            selectedDate = date;
+            renderWeekDays();
+            renderTimeSlots();
+        }
+
+        // Открытие модального окна для добавления события
+        function openAddEventModal() {
+            editingEventId = null;
+            document.getElementById('modal-title').textContent = 'Добавить событие';
+            document.getElementById('event-form').reset();
+            document.getElementById('event-date').value = formatDate(selectedDate, 'input');
+            document.getElementById('delete-event').style.display = 'none';
+            document.getElementById('event-modal').style.display = 'flex';
+        }
+
+        // Редактирование события
+        function editEvent(eventId) {
+            const dateKey = formatDate(selectedDate, 'key');
+            const event = events[dateKey].find(e => e.id === eventId);
+            
+            if (!event) return;
+            
+            editingEventId = eventId;
+            document.getElementById('modal-title').textContent = 'Редактировать событие';
+            document.getElementById('event-title').value = event.title;
+            document.getElementById('event-date').value = event.date;
+            document.getElementById('event-time').value = event.time;
+            document.getElementById('event-description').value = event.description || '';
+            document.getElementById('event-alarm').checked = event.alarm || false;
+            
+            if (event.alarm) {
+                document.getElementById('alarm-time-group').style.display = 'block';
+                document.getElementById('alarm-time').value = event.alarmOffset || '15';
+            } else {
+                document.getElementById('alarm-time-group').style.display = 'none';
+            }
+            
+            document.getElementById('delete-event').style.display = 'block';
+            document.getElementById('event-modal').style.display = 'flex';
+        }
+
+        // Закрытие модального окна
+        function closeEventModal() {
+            document.getElementById('event-modal').style.display = 'none';
+        }
+
+        // Сохранение события
+        function saveEvent(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('event-title').value;
+            const date = document.getElementById('event-date').value;
+            const time = document.getElementById('event-time').value;
+            const description = document.getElementById('event-description').value;
+            const alarm = document.getElementById('event-alarm').checked;
+            const alarmOffset = alarm ? document.getElementById('alarm-time').value : null;
+            
+            const eventDate = new Date(date);
+            const dateKey = formatDate(eventDate, 'key');
+            
+            if (!events[dateKey]) {
+                events[dateKey] = [];
+            }
+            
+            if (editingEventId) {
+                // Обновление существующего события
+                const eventIndex = events[dateKey].findIndex(e => e.id === editingEventId);
+                if (eventIndex !== -1) {
+                    events[dateKey][eventIndex] = {
+                        ...events[dateKey][eventIndex],
+                        title,
+                        date,
+                        time,
+                        description,
+                        alarm,
+                        alarmOffset
+                    };
+                }
+            } else {
+                // Добавление нового события
+                const eventId = Date.now().toString();
+                events[dateKey].push({
+                    id: eventId,
+                    title,
+                    date,
+                    time,
+                    description,
+                    alarm,
+                    alarmOffset
+                });
+            }
+            
+            // Сохранение в localStorage
+            localStorage.setItem('weeklyScheduleEvents', JSON.stringify(events));
+            
+            // Обновление отображения
+            if (isSameDay(eventDate, selectedDate)) {
+                renderTimeSlots();
+            }
+            
+            // Настройка будильника, если включен
+            if (alarm) {
+                scheduleNotification(date, time, title, alarmOffset);
+            }
+            
+            closeEventModal();
+        }
+
+        // Удаление события
+        function deleteEvent() {
+            if (!editingEventId) return;
+            
+            const dateKey = formatDate(selectedDate, 'key');
+            events[dateKey] = events[dateKey].filter(e => e.id !== editingEventId);
+            
+            // Если событий на этот день нет, удаляем ключ
+            if (events[dateKey].length === 0) {
+                delete events[dateKey];
+            }
+            
+            // Сохранение в localStorage
+            localStorage.setItem('weeklyScheduleEvents', JSON.stringify(events));
+            
+            // Обновление отображения
+            renderTimeSlots();
+            closeEventModal();
+        }
+
+        // Переключение отображения времени будильника
+        function toggleAlarmTime() {
+            const alarmChecked = document.getElementById('event-alarm').checked;
+            document.getElementById('alarm-time-group').style.display = alarmChecked ? 'block' : 'none';
+        }
+
+        // Проверка разрешения на уведомления
+        function checkNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                document.getElementById('notification-permission').style.display = 'block';
+            }
+        }
+
+        // Запрос разрешения на уведомления
+        function requestNotificationPermission() {
+            if ('Notification' in window) {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        document.getElementById('notification-permission').style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Настройка уведомления
+        function scheduleNotification(date, time, title, offsetMinutes) {
+            if (!('Notification' in window) || Notification.permission !== 'granted') {
+                return;
+            }
+            
+            const eventDateTime = new Date(`${date}T${time}`);
+            const notificationTime = new Date(eventDateTime.getTime() - offsetMinutes * 60000);
+            const now = new Date();
+            
+            // Если время уведомления уже прошло, не планируем его
+            if (notificationTime <= now) {
+                return;
+            }
+            
+            const timeout = notificationTime.getTime() - now.getTime();
+            
+            setTimeout(() => {
+                new Notification('Напоминание о событии', {
+                    body: `Событие "${title}" через ${offsetMinutes} минут`,
+                    icon: '/icon-192x192.png',
+                    tag: 'schedule-reminder'
+                });
+            }, timeout);
+        }
+
+        // Установка приложения
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        document.getElementById('install-prompt').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+
+        // Настройка Service Worker для PWA
+        function setupServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('Service Worker зарегистрирован:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Ошибка регистрации Service Worker:', error);
+                    });
+            }
+        }
+
+        // Вспомогательные функции
+        function formatDate(date, format) {
+            const optionsShort = { day: 'numeric', month: 'numeric' };
+            const optionsLong = { weekday: 'long', day: 'numeric', month: 'long' };
+            
+            switch(format) {
+                case 'short':
+                    return date.toLocaleDateString('ru-RU', optionsShort);
+                case 'long':
+                    return date.toLocaleDateString('ru-RU', optionsLong);
+                case 'input':
+                    return date.toISOString().split('T')[0];
+                case 'key':
+                    return date.toISOString().split('T')[0];
+                default:
+                    return date.toLocaleDateString('ru-RU');
+            }
+        }
+
+        function isSameDay(date1, date2) {
+            return date1.getDate() === date2.getDate() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getFullYear() === date2.getFullYear();
+        }
+
+        function getWeekNumber(date) {
+            const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+            const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+            return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "Планировщик недели",
+  "short_name": "Планировщик",
+  "description": "Приложение для управления расписанием на неделю с будильниками",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#4a6fa5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
